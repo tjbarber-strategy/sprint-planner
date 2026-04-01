@@ -1,19 +1,13 @@
 import { NextResponse } from 'next/server';
 
 export async function GET() {
-  if (process.env.NODE_ENV === 'production') {
-    return NextResponse.json({ error: 'Not found' }, { status: 404 });
-  }
-
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  const baseUrl = process.env.ANTHROPIC_BASE_URL;
-  const keyPrefix = apiKey ? `${apiKey.substring(0, 8)}...` : 'not set';
-
   return NextResponse.json({
-    hasKey: !!apiKey,
-    keyLength: apiKey?.length || 0,
-    keyPrefix,
-    baseUrl: baseUrl || 'not set',
+    hasAnthropicKey: !!process.env.ANTHROPIC_API_KEY,
+    hasGoogleClientId: !!process.env.GOOGLE_CLIENT_ID,
+    hasGoogleClientSecret: !!process.env.GOOGLE_CLIENT_SECRET,
+    hasNextAuthSecret: !!process.env.NEXTAUTH_SECRET,
+    hasNextAuthUrl: !!process.env.NEXTAUTH_URL,
+    googleClientIdPrefix: process.env.GOOGLE_CLIENT_ID?.substring(0, 20) || 'not set',
     nodeEnv: process.env.NODE_ENV,
   });
 }
