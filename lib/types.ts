@@ -58,11 +58,11 @@ export const JOB_TYPE_CONFIG: Record<JobTypeCode, JobTypeConfigItem> = {
     description: 'Brand new concept',
   },
   FIX: {
-    label: 'Fix',
+    label: 'Upgrade',
     category: 'Exploit',
-    defaultSubtype: 'Fix1',
+    defaultSubtype: 'Upgrade1',
     hitRate: 0.30,
-    description: 'Fix underperformer',
+    description: 'Upgrade underperformer',
   },
 };
 
@@ -221,6 +221,7 @@ export interface VolumeConfig {
   explorePercentage: number;
   netNewPercentage: number; // Percentage of Explore that is Net New (Adapt/New) vs Horizontal Scaling (Upgrade)
   timeline: TimelineType;
+  timelineCount: number; // Number of weeks/months/quarters (e.g. 2 weeks, 3 months)
 }
 
 // ===========================================

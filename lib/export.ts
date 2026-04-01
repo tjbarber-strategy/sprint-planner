@@ -35,7 +35,7 @@ export function mapJobTypeToSubtype(jobType: JobTypeCode): string {
     UPGRADE: 'Upgrade1',
     ADAPT: 'Adapt2',
     NEW: 'New1',
-    FIX: 'Fix1',
+    FIX: 'Upgrade1',
   };
   return mapping[jobType] || jobType;
 }

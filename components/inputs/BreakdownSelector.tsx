@@ -59,7 +59,7 @@ function getCategoryDisplay(rule: SprintRule): string {
 }
 
 export function BreakdownSelector() {
-  const { inputs, addRule, updateRule, removeRule, roadmapData, applyRoadmapToInputs } =
+  const { inputs, addRule, updateRule, removeRule, roadmapData, applyRoadmapToInputs, setBreakdownPriority } =
     useSprintStore();
 
   const [mode, setMode] = useState<Mode>(roadmapData ? 'roadmap' : 'manual');
@@ -104,6 +104,42 @@ export function BreakdownSelector() {
 
   return (
     <div className="space-y-3">
+      {/* Auto Breakdown Categories */}
+      <div>
+        <p className="text-xs text-muted-foreground mb-2">
+          Auto-generated categories — click to toggle on/off:
+        </p>
+        <div className="flex flex-wrap gap-1.5">
+          {(Object.entries(inputs.breakdowns) as [keyof BreakdownTypes, typeof inputs.breakdowns[keyof BreakdownTypes]][]).map(([key, config]) => {
+            const isActive = config.priority !== 'not_needed';
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setBreakdownPriority(key, isActive ? 'not_needed' : 'ideal')}
+                className="px-2.5 py-1 text-xs rounded-md border transition-colors"
+                style={
+                  isActive
+                    ? {
+                        backgroundColor: 'hsl(160, 84%, 39%, 0.15)',
+                        borderColor: 'hsl(160, 84%, 39%, 0.4)',
+                        color: 'hsl(160, 84%, 55%)',
+                      }
+                    : {
+                        backgroundColor: 'transparent',
+                        borderColor: 'hsl(222, 30%, 20%)',
+                        color: 'hsl(215, 20%, 40%)',
+                        textDecoration: 'line-through',
+                      }
+                }
+              >
+                {config.displayName}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Mode tabs */}
       <div className="flex gap-2">
         <button

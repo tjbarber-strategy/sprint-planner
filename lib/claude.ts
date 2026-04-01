@@ -116,7 +116,7 @@ Jobs are categorized into two main types based on risk and innovation level:
 
 ### EXPLOIT (Lower Risk, Higher Hit Rate)
 - **MORE** (Hit Rate: 45%): Iterate on proven winners. Create variations of top-performing ads.
-- **FIX** (Hit Rate: 30%): Fix underperformers. Identify and address issues in ads that aren't converting.
+- **UPGRADE** (Hit Rate: 30%): Upgrade underperformers. Identify and address issues in ads that aren't converting.
 
 ### EXPLORE (Higher Risk, Lower Hit Rate)
 - **UPGRADE** (Hit Rate: 20%): Test for new audiences. Adapt successful concepts for different demographics.

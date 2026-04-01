@@ -173,7 +173,7 @@ export function OutputPanel() {
             <Textarea
               value={feedback}
               onChange={(e) => setFeedback(e.target.value)}
-              placeholder={'Give feedback to regenerate\u2026 e.g. "Add more Meta jobs, reduce FIX types"'}
+              placeholder={'Give feedback to regenerate\u2026 e.g. "Add more Meta jobs, reduce UPGRADE types"'}
               className="text-xs resize-none min-h-[60px] flex-1 bg-background/40 border-border/40 placeholder:text-muted-foreground/40"
               disabled={isRegenerating}
               onKeyDown={(e) => {

@@ -124,6 +124,7 @@ const DEFAULT_INPUTS: SprintInputs = {
     explorePercentage: 50,
     netNewPercentage: 50, // 50% Net New (Adapt/New), 50% Horizontal Scaling (Upgrade)
     timeline: 'weekly',
+    timelineCount: 1,
   },
   breakdowns: DEFAULT_BREAKDOWNS,
   rules: [],

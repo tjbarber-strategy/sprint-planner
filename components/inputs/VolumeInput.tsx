@@ -12,7 +12,7 @@ const TIMELINE_OPTIONS: { value: TimelineType; label: string; multiplier: number
 
 export function VolumeInput() {
   const { inputs, setVolume } = useSprintStore();
-  const { totalJobs, explorePercentage, netNewPercentage, timeline } = inputs.volume;
+  const { totalJobs, explorePercentage, netNewPercentage, timeline, timelineCount = 1 } = inputs.volume;
 
   // Main category calculations
   const exploitPercentage = 100 - explorePercentage;
@@ -60,7 +60,17 @@ export function VolumeInput() {
         <label className="text-xs text-muted-foreground mb-2 block">
           Planning Period
         </label>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
+          <Input
+            type="number"
+            min={1}
+            max={52}
+            value={timelineCount}
+            onChange={(e) =>
+              setVolume({ ...inputs.volume, timelineCount: Math.max(1, parseInt(e.target.value) || 1) })
+            }
+            className="w-16 h-10 bg-secondary/50 border-border/50 text-center font-semibold"
+          />
           {TIMELINE_OPTIONS.map((option) => {
             const isSelected = timeline === option.value;
             return (
@@ -95,7 +105,7 @@ export function VolumeInput() {
       {/* Total Jobs Input */}
       <div>
         <label className="text-xs text-muted-foreground mb-1.5 block">
-          Total Jobs ({timeline === 'weekly' ? 'per week' : timeline === 'monthly' ? 'per month' : 'per quarter'})
+          Total Jobs (per {timelineCount > 1 ? `${timelineCount} ` : ''}{timeline === 'weekly' ? timelineCount === 1 ? 'week' : 'weeks' : timeline === 'monthly' ? timelineCount === 1 ? 'month' : 'months' : timelineCount === 1 ? 'quarter' : 'quarters'})
         </label>
         <Input
           type="number"
@@ -213,7 +223,7 @@ export function VolumeInput() {
               {horizontalScalingJobs > 1 && `${horizontalScalingJobs}`}
             </div>
           )}
-          {/* Exploit (More/Fix) */}
+          {/* Exploit (More/Upgrade) */}
           {exploitJobs > 0 && (
             <div
               className="bg-green-500 flex items-center justify-center text-[10px] font-medium text-white"
@@ -236,7 +246,7 @@ export function VolumeInput() {
           </div>
           <div className="flex items-center gap-1">
             <span className="w-2 h-2 rounded-sm bg-green-500" />
-            <span className="text-muted-foreground">Exploit (More/Fix)</span>
+            <span className="text-muted-foreground">Exploit (More/Upgrade)</span>
           </div>
         </div>
       </div>
