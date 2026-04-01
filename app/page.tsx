@@ -1,18 +1,24 @@
 'use client';
 
 import { useState } from 'react';
+import { useSession, signOut } from 'next-auth/react';
 import { useSprintStore } from '@/store/sprint-store';
 import { InputPanel } from '@/components/inputs/InputPanel';
 import { OutputPanel } from '@/components/output/OutputPanel';
 import { GenerateButton } from '@/components/shared/GenerateButton';
 import { HistoryNav } from '@/components/shared/HistoryNav';
+import { AuthGate } from '@/components/shared/AuthGate';
 import { Sparkles, Loader2, ClipboardList, PanelLeftClose, PanelLeft } from 'lucide-react';
 
 export default function SprintPlannerPage() {
   const { isGenerating, error, currentOutput, history } = useSprintStore();
+  const { data: session } = useSession();
   const [isInputPanelVisible, setIsInputPanelVisible] = useState(true);
 
+  const userInitial = session?.user?.name?.charAt(0)?.toUpperCase() || 'U';
+
   return (
+    <AuthGate>
     <div className="h-screen flex flex-col bg-background">
       {/* Background gradient effects */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
@@ -41,9 +47,13 @@ export default function SprintPlannerPage() {
           {/* Right side - History and avatar */}
           <div className="flex items-center gap-4">
             {history.length > 0 && <HistoryNav />}
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-purple-500 flex items-center justify-center text-white text-sm font-medium">
-              U
-            </div>
+            <button
+              onClick={() => signOut()}
+              title={session?.user?.email || 'Sign out'}
+              className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-purple-500 flex items-center justify-center text-white text-sm font-medium hover:opacity-80 transition-opacity cursor-pointer"
+            >
+              {userInitial}
+            </button>
           </div>
         </div>
       </header>
@@ -94,6 +104,7 @@ export default function SprintPlannerPage() {
         </section>
       </main>
     </div>
+    </AuthGate>
   );
 }
 
