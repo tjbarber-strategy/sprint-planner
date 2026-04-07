@@ -51,7 +51,7 @@ export function OutputPanel() {
   const handleExportCSV = async () => {
     setExporting('csv');
     try {
-      const csv = exportToCSV(currentOutput, inputs.breakdowns);
+      const csv = exportToCSV(currentOutput, inputs.breakdowns, inputs.customBreakdowns);
       downloadCSV(csv, `sprint-plan-${getTimestamp()}.csv`);
     } finally {
       setExporting(null);
@@ -61,7 +61,7 @@ export function OutputPanel() {
   const handleExportExcel = async () => {
     setExporting('excel');
     try {
-      const blob = exportToExcel(currentOutput, inputs.breakdowns);
+      const blob = exportToExcel(currentOutput, inputs.breakdowns, inputs.customBreakdowns);
       downloadBlob(blob, `sprint-plan-${getTimestamp()}.xlsx`);
     } finally {
       setExporting(null);
@@ -71,7 +71,7 @@ export function OutputPanel() {
   const handleExportMonday = async () => {
     setExporting('monday');
     try {
-      const blob = exportForMonday(currentOutput, inputs.breakdowns);
+      const blob = exportForMonday(currentOutput, inputs.breakdowns, {}, inputs.customBreakdowns);
       downloadBlob(blob, `monday-import-${getTimestamp()}.xlsx`);
     } finally {
       setExporting(null);

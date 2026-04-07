@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Plus, Trash2, FileText, Settings2 } from 'lucide-react';
+import { Plus, Trash2, FileText, Settings2, X } from 'lucide-react';
 import { BreakdownTypes, SprintRule } from '@/lib/types';
 
 const BREAKDOWN_CATEGORIES: { value: keyof BreakdownTypes | 'other'; label: string }[] = [
@@ -59,7 +59,7 @@ function getCategoryDisplay(rule: SprintRule): string {
 }
 
 export function BreakdownSelector() {
-  const { inputs, addRule, updateRule, removeRule, roadmapData, applyRoadmapToInputs, setBreakdownPriority } =
+  const { inputs, addRule, updateRule, removeRule, roadmapData, applyRoadmapToInputs, setBreakdownPriority, addCustomBreakdown, removeCustomBreakdown } =
     useSprintStore();
 
   const [mode, setMode] = useState<Mode>(roadmapData ? 'roadmap' : 'manual');
@@ -67,6 +67,8 @@ export function BreakdownSelector() {
   const [newCustomLabel, setNewCustomLabel] = useState('');
   const [newText, setNewText] = useState('');
   const [newTextFocused, setNewTextFocused] = useState(false);
+  const [newColumnName, setNewColumnName] = useState('');
+  const [showAddColumn, setShowAddColumn] = useState(false);
 
   const handleAddRule = () => {
     if (!newText.trim()) return;
@@ -84,6 +86,17 @@ export function BreakdownSelector() {
     setNewText('');
     setNewCustomLabel('');
   };
+
+  const handleAddColumn = () => {
+    if (!newColumnName.trim()) return;
+    addCustomBreakdown(newColumnName.trim());
+    setNewColumnName('');
+    setShowAddColumn(false);
+  };
+
+  const optionsToString = (options?: string[]) => (options || []).join(', ');
+  const stringToOptions = (str: string) =>
+    str.split(',').map((s) => s.trim()).filter(Boolean);
 
   const getRuleText = (rule: SprintRule) => rule.freeformText ?? rule.description;
 
@@ -104,10 +117,10 @@ export function BreakdownSelector() {
 
   return (
     <div className="space-y-3">
-      {/* Auto Breakdown Categories */}
+      {/* Breakdown Categories */}
       <div>
         <p className="text-xs text-muted-foreground mb-2">
-          Auto-generated categories — click to toggle on/off:
+          Breakdown columns — click to toggle on/off:
         </p>
         <div className="flex flex-wrap gap-1.5">
           {(Object.entries(inputs.breakdowns) as [keyof BreakdownTypes, typeof inputs.breakdowns[keyof BreakdownTypes]][]).map(([key, config]) => {
@@ -137,6 +150,60 @@ export function BreakdownSelector() {
               </button>
             );
           })}
+
+          {/* Custom breakdown chips */}
+          {Object.entries(inputs.customBreakdowns || {}).map(([key, config]) => (
+            <span
+              key={key}
+              className="flex items-center gap-1 px-2.5 py-1 text-xs rounded-md border"
+              style={{
+                backgroundColor: 'hsla(217, 91%, 60%, 0.12)',
+                borderColor: 'hsla(217, 91%, 60%, 0.35)',
+                color: 'hsl(217, 91%, 72%)',
+              }}
+            >
+              {config.displayName}
+              <button
+                type="button"
+                onClick={() => removeCustomBreakdown(key)}
+                className="hover:text-destructive transition-colors"
+              >
+                <X className="w-2.5 h-2.5" />
+              </button>
+            </span>
+          ))}
+
+          {/* Add custom column */}
+          {showAddColumn ? (
+            <span className="flex items-center gap-1">
+              <Input
+                autoFocus
+                value={newColumnName}
+                onChange={(e) => setNewColumnName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleAddColumn();
+                  if (e.key === 'Escape') { setShowAddColumn(false); setNewColumnName(''); }
+                }}
+                placeholder="Column name…"
+                className="h-6 w-32 bg-secondary/30 border-border/40 text-xs"
+              />
+              <button type="button" onClick={handleAddColumn} className="text-primary text-xs hover:underline">Add</button>
+              <button type="button" onClick={() => { setShowAddColumn(false); setNewColumnName(''); }} className="text-muted-foreground text-xs hover:text-foreground">Cancel</button>
+            </span>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setShowAddColumn(true)}
+              className="flex items-center gap-1 px-2.5 py-1 text-xs rounded-md border border-dashed transition-colors"
+              style={{
+                borderColor: 'hsl(222, 30%, 22%)',
+                color: 'hsl(215, 20%, 50%)',
+              }}
+            >
+              <Plus className="w-3 h-3" />
+              Custom column
+            </button>
+          )}
         </div>
       </div>
 
@@ -183,52 +250,65 @@ export function BreakdownSelector() {
       {(mode === 'manual' || roadmapData) && inputs.rules.length > 0 && (
         <div className="space-y-2">
           {inputs.rules.map((rule) => (
-            <div key={rule.id} className="flex gap-2 items-start">
-              {/* Category column */}
-              <div className="w-[155px] flex-shrink-0 space-y-1">
-                <Select
-                  value={rule.breakdownType}
-                  onValueChange={(v) => handleCategoryChange(rule.id, v)}
+            <div key={rule.id} className="space-y-1">
+              <div className="flex gap-2 items-start">
+                {/* Category column */}
+                <div className="w-[155px] flex-shrink-0 space-y-1">
+                  <Select
+                    value={rule.breakdownType}
+                    onValueChange={(v) => handleCategoryChange(rule.id, v)}
+                  >
+                    <SelectTrigger className="w-full h-9 bg-secondary/30 border-border/40 text-xs">
+                      <SelectValue>
+                        {getCategoryDisplay(rule)}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent className="bg-card border-border/50">
+                      {BREAKDOWN_CATEGORIES.map((cat) => (
+                        <SelectItem key={cat.value} value={cat.value} className="text-xs">
+                          {cat.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {rule.breakdownType === 'other' && (
+                    <Input
+                      value={rule.customLabel ?? ''}
+                      onChange={(e) => updateRule(rule.id, { customLabel: e.target.value })}
+                      placeholder="Category name..."
+                      className="h-7 bg-secondary/30 border-border/40 text-xs"
+                    />
+                  )}
+                </div>
+
+                {/* Freeform text */}
+                <Textarea
+                  value={getRuleText(rule)}
+                  onChange={(e) => handleTextChange(rule.id, e.target.value)}
+                  placeholder="Describe the rule or constraint..."
+                  className="flex-1 bg-secondary/30 border-border/40 text-xs min-h-[60px] resize-none"
+                />
+
+                {/* Delete */}
+                <button
+                  type="button"
+                  onClick={() => removeRule(rule.id)}
+                  className="flex-shrink-0 mt-1.5 text-muted-foreground hover:text-destructive transition-colors"
                 >
-                  <SelectTrigger className="w-full h-9 bg-secondary/30 border-border/40 text-xs">
-                    <SelectValue>
-                      {getCategoryDisplay(rule)}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent className="bg-card border-border/50">
-                    {BREAKDOWN_CATEGORIES.map((cat) => (
-                      <SelectItem key={cat.value} value={cat.value} className="text-xs">
-                        {cat.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {rule.breakdownType === 'other' && (
-                  <Input
-                    value={rule.customLabel ?? ''}
-                    onChange={(e) => updateRule(rule.id, { customLabel: e.target.value })}
-                    placeholder="Category name..."
-                    className="h-7 bg-secondary/30 border-border/40 text-xs"
-                  />
-                )}
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
               </div>
 
-              {/* Freeform text */}
-              <Textarea
-                value={getRuleText(rule)}
-                onChange={(e) => handleTextChange(rule.id, e.target.value)}
-                placeholder="Describe the rule or constraint..."
-                className="flex-1 bg-secondary/30 border-border/40 text-xs min-h-[60px] resize-none"
-              />
-
-              {/* Delete */}
-              <button
-                type="button"
-                onClick={() => removeRule(rule.id)}
-                className="flex-shrink-0 mt-1.5 text-muted-foreground hover:text-destructive transition-colors"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-              </button>
+              {/* Options row */}
+              <div className="flex items-center gap-2 pl-[163px]">
+                <span className="text-xs text-muted-foreground/60 flex-shrink-0">Valid values:</span>
+                <Input
+                  value={optionsToString(rule.options)}
+                  onChange={(e) => updateRule(rule.id, { options: stringToOptions(e.target.value) })}
+                  placeholder="e.g. Meta, TikTok, YouTube (comma-separated)"
+                  className="h-6 bg-secondary/20 border-border/30 text-xs placeholder:text-muted-foreground/30 placeholder:italic"
+                />
+              </div>
             </div>
           ))}
         </div>

@@ -56,6 +56,10 @@ interface SprintStore {
   setBreakdownOptions: (breakdown: keyof BreakdownTypes, options: string[]) => void;
   setBreakdownTargets: (breakdown: keyof BreakdownTypes, targets: Record<string, number>) => void;
 
+  // Input Actions - Custom Breakdowns
+  addCustomBreakdown: (displayName: string) => void;
+  removeCustomBreakdown: (key: string) => void;
+
   // Input Actions - Rules
   addRule: (rule: SprintRule) => void;
   updateRule: (id: string, rule: Partial<SprintRule>) => void;
@@ -127,6 +131,7 @@ const DEFAULT_INPUTS: SprintInputs = {
     timelineCount: 1,
   },
   breakdowns: DEFAULT_BREAKDOWNS,
+  customBreakdowns: {},
   rules: [],
   newIdeas: [],
   additionalContext: '',
@@ -295,6 +300,32 @@ export const useSprintStore = create<SprintStore>()(
             },
           },
         })),
+
+      addCustomBreakdown: (displayName) => {
+        const key = displayName.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+        set((state) => ({
+          inputs: {
+            ...state.inputs,
+            customBreakdowns: {
+              ...(state.inputs.customBreakdowns || {}),
+              [key]: {
+                name: key,
+                displayName,
+                priority: 'ideal',
+                options: [],
+                exportable: true,
+              },
+            },
+          },
+        }));
+      },
+
+      removeCustomBreakdown: (key) =>
+        set((state) => {
+          const updated = { ...(state.inputs.customBreakdowns || {}) };
+          delete updated[key];
+          return { inputs: { ...state.inputs, customBreakdowns: updated } };
+        }),
 
       // ===========================================
       // Input Actions - Rules
@@ -563,7 +594,9 @@ export const useSprintStore = create<SprintStore>()(
             ...roadmap.suggestedRules.map((r, index) => ({
               id: `roadmap-rule-${Date.now()}-${index}`,
               description: r.description,
+              freeformText: r.description,
               breakdownType: r.breakdownType,
+              options: r.options && r.options.length > 0 ? r.options : undefined,
               condition: {
                 type: r.type as 'percentage' | 'minimum',
                 value: r.value,

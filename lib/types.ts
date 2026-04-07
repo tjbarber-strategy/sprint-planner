@@ -254,6 +254,7 @@ export interface SprintRule {
   description: string;
   breakdownType: keyof BreakdownTypes | 'other';
   customLabel?: string; // Used when breakdownType === 'other'
+  options?: string[]; // Specific valid values for this breakdown (e.g. ['Meta', 'TikTok'])
   condition: RuleCondition;
   freeformText?: string;
   active: boolean;
@@ -278,6 +279,7 @@ export interface SprintInputs {
   client: ClientConfig;
   volume: VolumeConfig;
   breakdowns: BreakdownTypes;
+  customBreakdowns?: Record<string, BreakdownConfig>;
   rules: SprintRule[];
   newIdeas: NewIdea[];
   additionalContext?: string;
@@ -435,6 +437,7 @@ export interface RoadmapSuggestedRule {
   breakdownType: keyof BreakdownTypes;
   type: 'percentage' | 'minimum';
   value: number;
+  options?: string[]; // Specific valid values for this rule
 }
 
 export interface RoadmapExtraction {

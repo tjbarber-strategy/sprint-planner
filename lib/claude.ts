@@ -223,11 +223,36 @@ Total Jobs: ${volume.totalJobs}
 
 `;
     for (const rule of activeRules) {
-      prompt += `- ${rule.description} (${rule.condition.type}: ${formatCondition(rule.condition)})
+      prompt += `- ${rule.description} (${rule.condition.type}: ${formatCondition(rule.condition)})`;
+      if (rule.options && rule.options.length > 0) {
+        prompt += ` [Valid values: ${rule.options.join(', ')}]`;
+      }
+      prompt += `
 `;
     }
     prompt += `
 `;
+  }
+
+  // Add custom breakdowns
+  const customBreakdowns = inputs.customBreakdowns;
+  if (customBreakdowns && Object.keys(customBreakdowns).length > 0) {
+    prompt += `## Custom Breakdowns
+
+These additional breakdown columns must be assigned for every job:
+
+`;
+    for (const [key, config] of Object.entries(customBreakdowns)) {
+      if (config.priority === 'not_needed') continue;
+      prompt += `### ${config.displayName} (${config.priority.toUpperCase()})
+`;
+      if (config.options.length > 0) {
+        prompt += `Options: ${config.options.join(', ')}
+`;
+      }
+      prompt += `
+`;
+    }
   }
 
   // Add new ideas

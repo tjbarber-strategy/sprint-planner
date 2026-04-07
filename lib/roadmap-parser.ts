@@ -46,7 +46,7 @@ You MUST respond with ONLY a valid JSON object (no markdown, no explanation). Th
   "clientPriorities": ["Priority 1", "Priority 2"],
   "suggestedContext": "A 2-3 sentence summary for sprint planning context.",
   "suggestedRules": [
-    { "description": "Rule description", "breakdownType": "motivator", "type": "percentage", "value": 30 }
+    { "description": "Rule description", "breakdownType": "motivator", "type": "percentage", "value": 30, "options": ["MotivatorA", "MotivatorB"] }
   ]
 }
 
@@ -56,7 +56,7 @@ GUIDELINES:
 3. Identify motivators/RTBs - if spend % is mentioned, include it; mark as gap if identified as underexplored
 4. For visual formats, mark as "isWinning" if it's a top performer, "isGap" if it's identified as needing exploration
 5. Gaps should be categorized as 'creative', 'media', or 'workflow'
-6. suggestedRules should use breakdownType values: 'product', 'motivator', 'visualFormat', 'platform', 'buyerFunnelStage'
+6. suggestedRules should use breakdownType values: 'product', 'motivator', 'visualFormat', 'platform', 'buyerFunnelStage'. Include an "options" array with the specific valid values for that breakdown (e.g. the list of motivator names, product names, etc.)
 7. Be thorough but concise - focus on actionable insights for sprint planning
 8. If information is not present in the document, use empty arrays or reasonable defaults`;
 
@@ -145,11 +145,12 @@ function parseRoadmapResponse(response: string): RoadmapExtraction {
     clientPriorities: Array.isArray(parsed.clientPriorities) ? parsed.clientPriorities : [],
     suggestedContext: parsed.suggestedContext || '',
     suggestedRules: Array.isArray(parsed.suggestedRules)
-      ? parsed.suggestedRules.map((r: { description?: string; breakdownType?: string; type?: string; value?: number }) => ({
+      ? parsed.suggestedRules.map((r: { description?: string; breakdownType?: string; type?: string; value?: number; options?: string[] }) => ({
           description: r.description || '',
           breakdownType: r.breakdownType || 'motivator',
           type: (r.type === 'minimum' ? 'minimum' : 'percentage') as 'percentage' | 'minimum',
           value: r.value || 0,
+          options: Array.isArray(r.options) ? r.options : [],
         }))
       : [],
   };

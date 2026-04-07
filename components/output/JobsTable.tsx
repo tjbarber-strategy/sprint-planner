@@ -2,7 +2,7 @@
 
 import { useSprintStore } from '@/store/sprint-store';
 import { JobSlot, BreakdownTypes, JOB_TYPE_CONFIG, JobTypeCode } from '@/lib/types';
-import { getExportableBreakdowns } from '@/lib/export';
+import { getExportableBreakdowns, getExportableCustomBreakdowns } from '@/lib/export';
 
 const JOB_TYPE_OPTIONS: JobTypeCode[] = ['MORE', 'UPGRADE', 'ADAPT', 'NEW', 'FIX'];
 
@@ -17,6 +17,7 @@ export function JobsTable({ jobs, editable = false }: JobsTableProps) {
   const activeBreakdownKeys = getExportableBreakdowns(inputs.breakdowns).filter(
     (key) => key !== 'jobType'
   );
+  const customBreakdownKeys = getExportableCustomBreakdowns(inputs.customBreakdowns);
 
   const totalJobs = jobs.length;
   const exploreJobs = jobs.filter((job) => job.jobCategory === 'Explore').length;
@@ -38,6 +39,11 @@ export function JobsTable({ jobs, editable = false }: JobsTableProps) {
                 {activeBreakdownKeys.map((key) => (
                   <th key={key}>
                     {inputs.breakdowns[key as keyof BreakdownTypes]?.displayName || key}
+                  </th>
+                ))}
+                {customBreakdownKeys.map((key) => (
+                  <th key={key}>
+                    {inputs.customBreakdowns?.[key]?.displayName || key}
                   </th>
                 ))}
               </tr>
@@ -139,6 +145,50 @@ export function JobsTable({ jobs, editable = false }: JobsTableProps) {
                                   updateJobInOutput(job.slotNumber, {
                                     [key]: e.target.value,
                                   })
+                                }
+                              />
+                            )}
+                          </td>
+                        );
+                      }
+
+                      return (
+                        <td key={key}>
+                          <span className="text-sm text-muted-foreground">
+                            {value !== undefined && value !== null ? String(value) : '—'}
+                          </span>
+                        </td>
+                      );
+                    })}
+
+                    {/* Custom breakdown cells */}
+                    {customBreakdownKeys.map((key) => {
+                      const value = job[key];
+                      const options = inputs.customBreakdowns?.[key]?.options ?? [];
+
+                      if (editable) {
+                        return (
+                          <td key={key}>
+                            {options.length > 0 ? (
+                              <select
+                                className={cellStyle}
+                                value={String(value ?? '')}
+                                onChange={(e) =>
+                                  updateJobInOutput(job.slotNumber, { [key]: e.target.value })
+                                }
+                              >
+                                <option value="">—</option>
+                                {options.map((opt) => (
+                                  <option key={opt} value={opt}>{opt}</option>
+                                ))}
+                              </select>
+                            ) : (
+                              <input
+                                type="text"
+                                className={cellStyle}
+                                value={String(value ?? '')}
+                                onChange={(e) =>
+                                  updateJobInOutput(job.slotNumber, { [key]: e.target.value })
                                 }
                               />
                             )}

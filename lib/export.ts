@@ -2,6 +2,7 @@ import * as XLSX from 'xlsx';
 import {
   SprintOutput,
   BreakdownTypes,
+  BreakdownConfig,
   JobSlot,
   JobTypeCode,
   // Legacy types
@@ -59,6 +60,13 @@ export function getExportableBreakdowns(breakdowns: BreakdownTypes): string[] {
   return exportable;
 }
 
+export function getExportableCustomBreakdowns(customBreakdowns?: Record<string, BreakdownConfig>): string[] {
+  if (!customBreakdowns) return [];
+  return Object.entries(customBreakdowns)
+    .filter(([, config]) => config.priority !== 'not_needed' && config.exportable)
+    .map(([key]) => key);
+}
+
 export function downloadBlob(blob: Blob, filename: string): void {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
@@ -79,14 +87,15 @@ export function downloadCSV(csv: string, filename: string): void {
 // CSV Export
 // ===========================================
 
-export function exportToCSV(output: SprintOutput, breakdowns: BreakdownTypes): string {
+export function exportToCSV(output: SprintOutput, breakdowns: BreakdownTypes, customBreakdowns?: Record<string, BreakdownConfig>): string {
   const exportableBreakdowns = getExportableBreakdowns(breakdowns);
+  const exportableCustom = getExportableCustomBreakdowns(customBreakdowns);
 
   // Build headers
-  const headers = ['Slot', 'Job Type', 'Category', ...exportableBreakdowns.map(key => {
-    const config = breakdowns[key as keyof BreakdownTypes];
-    return config.displayName;
-  })];
+  const headers = ['Slot', 'Job Type', 'Category',
+    ...exportableBreakdowns.map(key => breakdowns[key as keyof BreakdownTypes].displayName),
+    ...exportableCustom.map(key => customBreakdowns![key].displayName),
+  ];
 
   // Build rows
   const rows: string[][] = [];
@@ -100,6 +109,10 @@ export function exportToCSV(output: SprintOutput, breakdowns: BreakdownTypes): s
 
     // Add breakdown values
     for (const key of exportableBreakdowns) {
+      const value = job[key];
+      row.push(value !== undefined ? String(value) : '');
+    }
+    for (const key of exportableCustom) {
       const value = job[key];
       row.push(value !== undefined ? String(value) : '');
     }
@@ -125,14 +138,15 @@ export function exportToCSV(output: SprintOutput, breakdowns: BreakdownTypes): s
 // Excel Export
 // ===========================================
 
-export function exportToExcel(output: SprintOutput, breakdowns: BreakdownTypes): Blob {
+export function exportToExcel(output: SprintOutput, breakdowns: BreakdownTypes, customBreakdowns?: Record<string, BreakdownConfig>): Blob {
   const exportableBreakdowns = getExportableBreakdowns(breakdowns);
+  const exportableCustom = getExportableCustomBreakdowns(customBreakdowns);
 
   // Build headers
-  const headers = ['Slot', 'Job Type', 'Category', ...exportableBreakdowns.map(key => {
-    const config = breakdowns[key as keyof BreakdownTypes];
-    return config.displayName;
-  })];
+  const headers = ['Slot', 'Job Type', 'Category',
+    ...exportableBreakdowns.map(key => breakdowns[key as keyof BreakdownTypes].displayName),
+    ...exportableCustom.map(key => customBreakdowns![key].displayName),
+  ];
 
   // Build data rows
   const data: (string | number)[][] = [];
@@ -146,6 +160,10 @@ export function exportToExcel(output: SprintOutput, breakdowns: BreakdownTypes):
 
     // Add breakdown values
     for (const key of exportableBreakdowns) {
+      const value = job[key];
+      row.push(value !== undefined ? String(value) : '');
+    }
+    for (const key of exportableCustom) {
       const value = job[key];
       row.push(value !== undefined ? String(value) : '');
     }
@@ -180,9 +198,11 @@ interface MondayExportOptions {
 export function exportForMonday(
   output: SprintOutput,
   breakdowns: BreakdownTypes,
-  options: MondayExportOptions = {}
+  options: MondayExportOptions = {},
+  customBreakdowns?: Record<string, BreakdownConfig>
 ): Blob {
   const exportableBreakdowns = getExportableBreakdowns(breakdowns);
+  const exportableCustom = getExportableCustomBreakdowns(customBreakdowns);
 
   // Build headers with Monday.com column names
   const headers: string[] = ['Name'];
@@ -193,6 +213,11 @@ export function exportForMonday(
     if (mondayName) {
       headers.push(mondayName);
     }
+  }
+
+  // Add custom breakdown headers
+  for (const key of exportableCustom) {
+    headers.push(customBreakdowns![key].displayName);
   }
 
   // Build data rows
@@ -217,6 +242,12 @@ export function exportForMonday(
         value = mapJobTypeToSubtype(value as JobTypeCode);
       }
 
+      row.push(value !== undefined ? String(value) : '');
+    }
+
+    // Add custom breakdown values
+    for (const key of exportableCustom) {
+      const value = job[key];
       row.push(value !== undefined ? String(value) : '');
     }
 
