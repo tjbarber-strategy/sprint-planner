@@ -4,90 +4,38 @@ import { useState } from 'react';
 import { useSprintStore } from '@/store/sprint-store';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
 import {
   Table2,
   FileText,
   CheckCircle2,
   FileSpreadsheet,
-  Calendar,
   Pencil,
-  ChevronLeft,
-  ChevronRight,
-  RotateCcw,
-  Loader2,
 } from 'lucide-react';
 import { JobsTable } from './JobsTable';
 import { AnalysisPanel } from './AnalysisPanel';
 import {
-  exportToCSV,
-  exportToExcel,
   exportForMonday,
-  downloadCSV,
   downloadBlob,
 } from '@/lib/export';
 
 export function OutputPanel() {
-  const {
-    currentOutput,
-    inputs,
-    isFinalized,
-    setFinalized,
-    addToHistory,
-    generations,
-    currentGenerationIndex,
-    navigateGeneration,
-    regenerateWithFeedback,
-    isRegenerating,
-  } = useSprintStore();
+  const { currentOutput, inputs, isFinalized, setFinalized, addToHistory } = useSprintStore();
   const jobs = currentOutput?.jobs ?? [];
-  const [exporting, setExporting] = useState<'csv' | 'excel' | 'monday' | null>(null);
-  const [feedback, setFeedback] = useState('');
+  const [exporting, setExporting] = useState<'excel' | null>(null);
 
   if (!currentOutput) return null;
 
   const getTimestamp = () => new Date().toISOString().slice(0, 10).replace(/-/g, '');
 
-  const handleExportCSV = async () => {
-    setExporting('csv');
-    try {
-      const csv = exportToCSV(currentOutput, inputs.breakdowns, inputs.customBreakdowns);
-      downloadCSV(csv, `sprint-plan-${getTimestamp()}.csv`);
-    } finally {
-      setExporting(null);
-    }
-  };
-
   const handleExportExcel = async () => {
     setExporting('excel');
     try {
-      const blob = exportToExcel(currentOutput, inputs.breakdowns, inputs.customBreakdowns);
+      const blob = exportForMonday(currentOutput, inputs.breakdowns);
       downloadBlob(blob, `sprint-plan-${getTimestamp()}.xlsx`);
     } finally {
       setExporting(null);
     }
   };
-
-  const handleExportMonday = async () => {
-    setExporting('monday');
-    try {
-      const blob = exportForMonday(currentOutput, inputs.breakdowns, {}, inputs.customBreakdowns);
-      downloadBlob(blob, `monday-import-${getTimestamp()}.xlsx`);
-    } finally {
-      setExporting(null);
-    }
-  };
-
-  const handleRegenerate = async () => {
-    if (!feedback.trim() || isRegenerating) return;
-    await regenerateWithFeedback(feedback.trim());
-    setFeedback('');
-  };
-
-  const totalGens = generations.length;
-  const isLatest = currentGenerationIndex === totalGens - 1;
-  const canGoBack = currentGenerationIndex > 0;
-  const canGoForward = currentGenerationIndex < totalGens - 1;
 
   return (
     <div className="h-full flex flex-col">
@@ -95,106 +43,38 @@ export function OutputPanel() {
       {!isFinalized ? (
         /* ── Phase A: Review & Edit ── */
         <div
-          className="mx-4 mt-4 mb-0 rounded-xl border p-4 flex flex-col gap-3"
+          className="mx-4 mt-4 mb-0 rounded-xl border p-4 flex items-start justify-between gap-4"
           style={{
             background: 'linear-gradient(135deg, hsla(217,91%,60%,0.08), hsla(270,70%,60%,0.06))',
             borderColor: 'hsla(217,91%,60%,0.25)',
           }}
         >
-          {/* Top row: step badge + description + approve button */}
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-start gap-3">
-              <div
-                className="w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold text-white flex-shrink-0 mt-0.5"
-                style={{ background: 'hsl(217,91%,60%)' }}
-              >
-                7
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-foreground flex items-center gap-1.5">
-                  <Pencil className="w-3.5 h-3.5 text-primary" />
-                  Review &amp; Edit
-                </p>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Review the AI-generated plan. Edit any cell directly in the table. Give feedback below to regenerate, or approve when satisfied.
-                </p>
-              </div>
-            </div>
-            <Button
-              size="sm"
-              onClick={() => { addToHistory(currentOutput, inputs); setFinalized(true); }}
-              className="flex-shrink-0 bg-primary/20 border border-primary/50 text-primary hover:bg-primary/30 hover:border-primary"
-              variant="outline"
+          <div className="flex items-start gap-3">
+            <div
+              className="w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold text-white flex-shrink-0 mt-0.5"
+              style={{ background: 'hsl(217,91%,60%)' }}
             >
-              <CheckCircle2 className="w-4 h-4 mr-1.5" />
-              Approve Sprint Plan
-            </Button>
-          </div>
-
-          {/* Generation carousel (only shown when there are multiple generations) */}
-          {totalGens > 1 && (
-            <div className="flex items-center gap-2 px-1">
-              <button
-                type="button"
-                onClick={() => navigateGeneration(currentGenerationIndex - 1)}
-                disabled={!canGoBack}
-                className="p-1 rounded hover:bg-primary/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-              >
-                <ChevronLeft className="w-4 h-4 text-primary" />
-              </button>
-              <span className="text-xs text-muted-foreground tabular-nums">
-                Generation {currentGenerationIndex + 1} / {totalGens}
-              </span>
-              <button
-                type="button"
-                onClick={() => navigateGeneration(currentGenerationIndex + 1)}
-                disabled={!canGoForward}
-                className="p-1 rounded hover:bg-primary/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-              >
-                <ChevronRight className="w-4 h-4 text-primary" />
-              </button>
-              {generations[currentGenerationIndex]?.feedbackUsed && (
-                <span className="text-xs text-muted-foreground/60 truncate max-w-[220px]">
-                  {'\u2014 \u201c'}{generations[currentGenerationIndex].feedbackUsed}{'\u201d'}
-                </span>
-              )}
+              7
             </div>
-          )}
-
-          {/* Non-latest warning */}
-          {!isLatest && totalGens > 1 && (
-            <p className="text-xs text-amber-400/80 px-1">
-              Viewing generation {currentGenerationIndex + 1}. Regenerating from here will discard generations {currentGenerationIndex + 2}–{totalGens}.
-            </p>
-          )}
-
-          {/* Feedback + regenerate */}
-          <div className="flex gap-2 items-end">
-            <Textarea
-              value={feedback}
-              onChange={(e) => setFeedback(e.target.value)}
-              placeholder={'Give feedback to regenerate\u2026 e.g. "Add more Meta jobs, reduce UPGRADE types"'}
-              className="text-xs resize-none min-h-[60px] flex-1 bg-background/40 border-border/40 placeholder:text-muted-foreground/40"
-              disabled={isRegenerating}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleRegenerate();
-              }}
-            />
-            <Button
-              size="sm"
-              onClick={handleRegenerate}
-              disabled={!feedback.trim() || isRegenerating}
-              variant="outline"
-              className="flex-shrink-0 self-end border-primary/40 text-primary hover:bg-primary/10 disabled:opacity-40"
-            >
-              {isRegenerating ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <RotateCcw className="w-4 h-4" />
-              )}
-              <span className="ml-1.5">{isRegenerating ? 'Regenerating…' : 'Regenerate'}</span>
-            </Button>
+            <div>
+              <p className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+                <Pencil className="w-3.5 h-3.5 text-primary" />
+                Review &amp; Edit
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Review the AI-generated plan. Edit any cell directly in the table using the dropdowns. When satisfied, approve to finalize.
+              </p>
+            </div>
           </div>
+          <Button
+            size="sm"
+            onClick={() => { addToHistory(currentOutput, inputs); setFinalized(true); }}
+            className="flex-shrink-0 bg-primary/20 border border-primary/50 text-primary hover:bg-primary/30 hover:border-primary"
+            variant="outline"
+          >
+            <CheckCircle2 className="w-4 h-4 mr-1.5" />
+            Approve Sprint Plan
+          </Button>
         </div>
       ) : (
         /* ── Phase B: Approved — Export ── */
@@ -219,7 +99,7 @@ export function OutputPanel() {
                   Sprint Plan Approved
                 </p>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Your plan is locked and ready to export. Download as Excel for sharing, or Monday.com for direct import.
+                  Your plan is locked and ready to export.
                 </p>
               </div>
             </div>
@@ -232,7 +112,7 @@ export function OutputPanel() {
             </button>
           </div>
 
-          {/* Export buttons */}
+          {/* Export button */}
           <div className="flex gap-2 mt-3 flex-wrap">
             <Button
               size="sm"
@@ -243,26 +123,6 @@ export function OutputPanel() {
             >
               <FileSpreadsheet className="w-4 h-4 mr-1.5" />
               {exporting === 'excel' ? 'Exporting…' : 'Export to Excel'}
-            </Button>
-            <Button
-              size="sm"
-              onClick={handleExportMonday}
-              disabled={exporting !== null}
-              variant="outline"
-              className="border-border/50 hover:bg-secondary/70"
-            >
-              <Calendar className="w-4 h-4 mr-1.5" />
-              {exporting === 'monday' ? 'Exporting…' : 'Monday.com'}
-            </Button>
-            <Button
-              size="sm"
-              onClick={handleExportCSV}
-              disabled={exporting !== null}
-              variant="outline"
-              className="border-border/50 hover:bg-secondary/70"
-            >
-              <FileText className="w-4 h-4 mr-1.5" />
-              {exporting === 'csv' ? 'Exporting…' : 'CSV'}
             </Button>
           </div>
         </div>
@@ -289,21 +149,8 @@ export function OutputPanel() {
           </TabsList>
         </div>
 
-        <TabsContent
-          value="jobs"
-          className="flex-1 overflow-y-auto p-4 mt-0 relative"
-        >
-          {isRegenerating && (
-            <div className="absolute inset-0 flex items-center justify-center z-10 bg-background/20">
-              <div className="flex items-center gap-2 text-sm text-primary bg-background/90 px-4 py-2 rounded-lg border border-primary/30">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Regenerating sprint plan…
-              </div>
-            </div>
-          )}
-          <div className={`transition-opacity duration-300 ${isRegenerating ? 'opacity-30' : 'opacity-100'}`}>
-            <JobsTable jobs={currentOutput.jobs} editable={!isFinalized && !isRegenerating} />
-          </div>
+        <TabsContent value="jobs" className="flex-1 overflow-y-auto p-4 mt-0">
+          <JobsTable jobs={currentOutput.jobs} editable={!isFinalized} />
         </TabsContent>
 
         <TabsContent value="analysis" className="flex-1 overflow-y-auto p-4 mt-0">
